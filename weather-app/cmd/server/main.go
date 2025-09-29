@@ -7,7 +7,7 @@ import (
 	"strings"
 	"time"
 
-	"https://github.com/yassirrah/weather-app/internal/weather"
+	"github.com/yassirrah/go-console-e3/weather-app/internal/weather"
 
 	"github.com/gin-gonic/gin"
 )
@@ -18,6 +18,8 @@ func main() {
 		log.Fatal("OPENWEATHER_API_KEY is required")
 	}
 	wc := weather.NewClient(apiKey)
+
+	
 
 	r := gin.New()
 	r.Use(gin.Logger(), gin.Recovery())
