@@ -1,0 +1,44 @@
+services:
+  db:        # 1) Database container
+    image: postgres:16-alpine
+    container_name: weather_db
+    environment:
+      POSTGRES_DB: weather
+      POSTGRES_USER: weather
+      POSTGRES_PASSWORD: secret
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U weather -d weather"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+    volumes:
+      - dbdata:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+
+  server:    # 2) Go API container
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: weather_api
+    environment:
+      OPENWEATHER_API_KEY: ${OPENWEATHER_API_KEY}
+      DB_DSN: postgres://weather:secret@db:5432/weather?sslmode=disable
+    depends_on:
+      db:
+        condition: service_healthy
+    ports:
+      - "8080:8080"
+
+  frontend:  # 3) Frontend container
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: weather_frontend
+    depends_on:
+      - server
+    ports:
+      - "3000:80"
+
+volumes:
+  dbdata:

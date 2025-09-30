@@ -7,9 +7,9 @@ import (
 	"strings"
 	"time"
 
-	"github.com/yassirrah/go-console-e3/weather-app/internal/weather"
-
 	"github.com/gin-gonic/gin"
+	"github.com/yassirrah/go-console-e3/weather-app/internal/store"
+	"github.com/yassirrah/go-console-e3/weather-app/internal/weather"
 )
 
 func main() {
@@ -17,9 +17,19 @@ func main() {
 	if apiKey == "" {
 		log.Fatal("OPENWEATHER_API_KEY is required")
 	}
-	wc := weather.NewClient(apiKey)
 
-	
+	dsn := strings.TrimSpace(os.Getenv("DB_DSN"))
+	if dsn == "" {
+		log.Fatal("DB_DSN is required (e.g. postgres://user:pass@db:5432/weather?sslmode=disable)")
+	}
+
+	st, err := store.Open(dsn)
+	if err != nil {
+		log.Fatal(err)
+	}
+	defer st.Close()
+
+	wc := weather.NewClient(apiKey)
 
 	r := gin.New()
 	r.Use(gin.Logger(), gin.Recovery())
@@ -42,7 +52,15 @@ func main() {
 			c.JSON(http.StatusBadGateway, gin.H{"error": err.Error()})
 			return
 		}
-		c.JSON(http.StatusOK, weather.ToDTO(res))
+
+		dto := weather.ToDTO(res)
+		// Persist
+		_ = st.InsertWeather(c.Request.Context(), store.WeatherRow{
+			City: city, Units: units, Temperature: dto.Temperature,
+			Humidity: dto.Humidity, Conditions: dto.Conditions,
+		}) // keep simple; handle/log err in real app
+
+		c.JSON(http.StatusOK, dto)
 	})
 
 	addr := ":8080"

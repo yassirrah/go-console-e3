@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Weather App</title>
+  <style>
+    body { font-family: Arial, sans-serif; margin: 2rem; }
+    input, button { padding: 0.5rem; margin: 0.25rem; }
+    .result { margin-top: 1rem; padding: 1rem; border: 1px solid #ccc; border-radius: 5px; }
+  </style>
+</head>
+<body>
+  <h1>🌤️ Weather App</h1>
+  <input id="city" placeholder="Enter city (e.g. Rabat)" />
+  <select id="units">
+    <option value="metric">Celsius</option>
+    <option value="imperial">Fahrenheit</option>
+  </select>
+  <button onclick="getWeather()">Get Weather</button>
+
+  <div class="result" id="result"></div>
+
+  <script>
+    async function getWeather() {
+      const city = document.getElementById("city").value.trim();
+      const units = document.getElementById("units").value;
+      if (!city) {
+        alert("Please enter a city");
+        return;
+      }
+
+      try {
+        const res = await fetch(`api/v1/weather?city=${encodeURIComponent(city)}&units=${units}`);
+        if (!res.ok) {
+          throw new Error("Failed to fetch weather");
+        }
+        const data = await res.json();
+        document.getElementById("result").innerHTML = `
+          <h3>Weather in ${data.city}</h3>
+          <p><b>Temperature:</b> ${data.temperature_c}°${units === "metric" ? "C" : "F"}</p>
+          <p><b>Humidity:</b> ${data.humidity_pct}%</p>
+          <p><b>Conditions:</b> ${data.conditions}</p>
+        `;
+      } catch (err) {
+        document.getElementById("result").innerHTML = `<p style="color:red;">${err.message}</p>`;
+      }
+    }
+  </script>
+</body>
+</html>
